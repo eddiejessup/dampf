@@ -151,7 +151,8 @@ class DVIFile(object):
                                        content=number_of_units,
                                        signed=number_of_units < 0))
 
-    def set_character(self, character_code):
+    def set_character(self, character):
+        character_code = ord(character)
         if character_code < 128:
             number_of_bytes = 0
             op_code = character_code

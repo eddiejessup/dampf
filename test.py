@@ -4,36 +4,37 @@ from __future__ import (print_function, division, absolute_import,
 import dvi
 import box
 import tex
+import tex_parser
 
 
 def test_dvi():
-    dvi_file = dvi.DVIFile()
-    dvi_file.write_preamble()
-    dvi_file.begin_page()
-    dvi_file.push()
-    dvi_file.down(15859712)
-    dvi_file.pop()
-    dvi_file.down(42152922)
-    dvi_file.push()
-    dvi_file.down(4253469734)
-    dvi_file.push()
-    dvi_file.right(1310720)
-    dvi_file.define_font(font_number=0, font_check_sum=0x4bf16079,
-                         scale_factor=0x000a0000, design_size=0x000a0000,
-                         file_path=b'cmr10')
-    dvi_file.set_font(font_number=0)
-    dvi_file.set_character('a')
-    dvi_file.set_character('b')
-    dvi_file.pop()
-    dvi_file.pop()
-    dvi_file.down(0x180000)
-    dvi_file.push()
-    dvi_file.right(0x00e860a3)
-    dvi_file.set_character('1')
-    dvi_file.pop()
-    dvi_file.end_page()
-    dvi_file.write_postamble()
-    dvi_file.output_to_file('test.dvi')
+    dvi_document = dvi.DVIDocument()
+    dvi_document.write_preamble()
+    dvi_document.begin_page()
+    dvi_document.push()
+    dvi_document.down(15859712)
+    dvi_document.pop()
+    dvi_document.down(42152922)
+    dvi_document.push()
+    dvi_document.down(4253469734)
+    dvi_document.push()
+    dvi_document.right(1310720)
+    dvi_document.define_font(font_number=0, font_check_sum=0x4bf16079,
+                             scale_factor=0x000a0000, design_size=0x000a0000,
+                             file_path=b'cmr10')
+    dvi_document.set_font(font_number=0)
+    dvi_document.set_character('a')
+    dvi_document.set_character('b')
+    dvi_document.pop()
+    dvi_document.pop()
+    dvi_document.down(0x180000)
+    dvi_document.push()
+    dvi_document.right(0x00e860a3)
+    dvi_document.set_character('1')
+    dvi_document.pop()
+    dvi_document.end_page()
+    dvi_document.write_postamble()
+    dvi_document.output_to_file('test.dvi')
 
 
 def test_box():
@@ -46,45 +47,61 @@ def test_box():
     v_list_1 = box.VList([h_list_1, h_list_2])
     v_list_2 = box.VList([h_list_1, h_list_2])
     v_list_all = box.VList([v_list_1, v_list_2])
-    dvi_file = dvi.DVIFile()
-    dvi_file.write_preamble()
-    dvi_file.begin_page()
-    dvi_file.define_font(font_number=0, font_check_sum=0x4bf16079,
-                         scale_factor=0x000a0000, design_size=0x000a0000,
-                         file_path=b'cmr10')
-    v_list_all.write_to_file(dvi_file)
-    dvi_file.end_page()
-    dvi_file.write_postamble()
-    dvi_file.output_to_file('box_test.dvi')
+    dvi_document = dvi.DVIDocument()
+    dvi_document.write_preamble()
+    dvi_document.begin_page()
+    dvi_document.define_font(font_number=0, font_check_sum=0x4bf16079,
+                             scale_factor=0x000a0000, design_size=0x000a0000,
+                             file_path=b'cmr10')
+    v_list_all.write_to_file(dvi_document)
+    dvi_document.end_page()
+    dvi_document.write_postamble()
+    dvi_document.output_to_file('box_test.dvi')
 
 
 def test_tex():
-    tex_file = tex.TexFile()
-    tex_file.start_paragraph()
-    tex_file.add_character('T')
-    tex_file.add_character('h')
-    tex_file.add_character('e')
-    tex_file.add_space()
-    tex_file.add_character('s')
-    tex_file.add_character('t')
-    tex_file.add_character('a')
-    tex_file.add_character('r')
-    tex_file.add_character('t')
-    tex_file.add_character('.')
+    tex_page = tex.TexPage()
+    tex_page.start_paragraph()
+    tex_page.add_character('T')
+    tex_page.add_character('h')
+    tex_page.add_character('e')
+    tex_page.add_space()
+    tex_page.add_character('s')
+    tex_page.add_character('t')
+    tex_page.add_character('a')
+    tex_page.add_character('r')
+    tex_page.add_character('t')
+    tex_page.add_character('.')
 
-    tex_file.start_paragraph()
-    tex_file.add_character('T')
-    tex_file.add_character('h')
-    tex_file.add_character('e')
-    tex_file.add_space()
-    tex_file.add_character('e')
-    tex_file.add_character('n')
-    tex_file.add_character('d')
-    tex_file.add_character('.')
+    tex_page.start_paragraph()
+    tex_page.add_character('T')
+    tex_page.add_character('h')
+    tex_page.add_character('e')
+    tex_page.add_space()
+    tex_page.add_character('e')
+    tex_page.add_character('n')
+    tex_page.add_character('d')
+    tex_page.add_character('.')
 
-    dvi_file = tex_file.output_to_dvi_file()
-    dvi_file.output_to_file('tex_test.dvi')
+    dvi_document = tex_page.output_to_dvi_file()
+    dvi_document.output_to_file('tex_test.dvi')
+
+
+def test_parser():
+    data = 'ab \n\nima'
+    r = tex_parser.parser.parse(data)
+    tex_page = r.to_tex_page()
+    dvi_file = tex_page.output_to_dvi_file()
+    dvi_file.output_to_file('parser_test.dvi')
+
+
+def test_parser_from_file():
+    data = open('parser_test_file.tex', 'r').read()[:-1]
+    r = tex_parser.parser.parse(data)
+    tex_page = r.to_tex_page()
+    dvi_file = tex_page.output_to_dvi_file()
+    dvi_file.output_to_file('parser_test_from_file.dvi')
 
 
 if __name__ == '__main__':
-    test_tex()
+    test_parser_from_file()

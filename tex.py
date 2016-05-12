@@ -1,40 +1,53 @@
-import dvi
 import box
 
 
-class TexFile(object):
+class TexPage(object):
 
-    def __init__(self):
-        self.v_list = box.VListNode()
+    def __init__(self, font, line_spacing_frac=1.2, paragraph_spacing_frac=2):
+        self.paragraph_spacing_frac = paragraph_spacing_frac
+        self.line_spacing_frac = line_spacing_frac
+        self.font = font
+        paragraph_list = box.RegularVListNode(v_spacing_pt=self.paragraph_spacing_pt)
+        self.page = box.PageNode(paragraph_list=paragraph_list, font=font)
 
     @property
-    def current_h_list(self):
-        h_list = self.v_list.nodes[-1]
-        if not isinstance(h_list, box.HListNode):
-            raise TypeError
-        return h_list
+    def _paragraph_list(self):
+        return self.page.paragraph_list
 
-    def start_paragraph(self):
-        h_list = box.HListNode()
-        self.v_list.append(h_list)
+    @property
+    def _current_paragraph(self):
+        return self._paragraph_list.nodes[-1]
+
+    @property
+    def _current_line(self):
+        return self._current_paragraph.nodes[-1]
+
+    @property
+    def line_spacing_pt(self):
+        return self.font.design_font_size * self.line_spacing_frac
+
+    @property
+    def paragraph_spacing_pt(self):
+        return self.font.design_font_size * self.paragraph_spacing_frac
+
+    def _start_new_line(self):
+        line = box.HListNode()
+        self._current_paragraph.append(line)
+
+    def start_new_paragraph(self):
+        paragraph = box.RegularVListNode(v_spacing_pt=self.line_spacing_pt)
+        self._paragraph_list.append(paragraph)
+        self._start_new_line()
+        indentation = box.HWhiteSpaceNode(width_pt=50)
+        self._current_line.append(indentation)
 
     def add_character(self, character):
-        b = character.encode()
-        c = box.CharacterNode(b, font_number=0)
-        self.current_h_list.append(c)
+        c = box.CharacterNode(character.encode(), font=self.font)
+        self._current_line.append(c)
 
     def add_space(self):
-        n = box.WhiteSpaceNode(220000)
-        self.current_h_list.append(n)
+        n = box.WordSpaceNode(font=self.font)
+        self._current_line.append(n)
 
     def output_to_dvi_file(self):
-        dvi_file = dvi.DVIFile()
-        dvi_file.write_preamble()
-        dvi_file.begin_page()
-        dvi_file.define_font(font_number=0, font_check_sum=0x4bf16079,
-                             scale_factor=0x000a0000, design_size=0x000a0000,
-                             file_path=b'cmr10')
-        self.v_list.write_to_file(dvi_file)
-        dvi_file.end_page()
-        dvi_file.write_postamble()
-        return dvi_file
+        return self.page.write_to_file()

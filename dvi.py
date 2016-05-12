@@ -5,7 +5,18 @@ import math
 DVIBytes = namedtuple('Bytes', ['length', 'content', 'signed'])
 
 
-class DVIFile(object):
+def twos_complement(n):
+    return (~abs(n)) + 1 if n < 0 else n
+
+
+def to_bytes(n, length, byteorder='big', signed=True):
+    # n = twos_complement(n)
+    ints = [n >> (8 * i) & 0xff for i in range(length - 1, -1, -1)]
+    s = bytes(bytearray(ints))
+    return s if byteorder == 'big' else s[::-1]
+
+
+class DVIDocument(object):
     dvi_version = 2
     byte_endianness = 'big'
 
@@ -57,14 +68,17 @@ class DVIFile(object):
         self.maximum_page_height_plus_depth = 0
 
     def _dvi_bytes_to_bytes(self, dvi_bytes):
-        return int(dvi_bytes.content).to_bytes(length=dvi_bytes.length,
-                                               byteorder=self.byte_endianness,
-                                               signed=dvi_bytes.signed)
+        kwargs = {
+            'length': dvi_bytes.length,
+             'byteorder': self.byte_endianness,
+             'signed': dvi_bytes.signed
+        }
+        return to_bytes(int(dvi_bytes.content), **kwargs)
 
     def write_preamble(self, unit_numerator=int(254e5),
                        unit_denominator=int(7227 * 2 ** 16),
                        magnification=1000,
-                       comment=b' TeX output 2016.05.10:1417'):
+                       comment=' TeX output 2016.05.10:1417'):
         """Write the preamble.
 
         unit_numerator, unit_denominator: positive integers < 2 ** (8 * 4).
@@ -98,7 +112,7 @@ class DVIFile(object):
             DVIBytes(length=1, content=len(comment), signed=False),
         ])
         for character in comment:
-            self.bytes_set.append(DVIBytes(length=1, content=character,
+            self.bytes_set.append(DVIBytes(length=1, content=ord(character),
                                            signed=False))
 
     def begin_page(self, page_numbers=None):
@@ -180,7 +194,7 @@ class DVIFile(object):
         if file_path:
             for character in file_path:
                 font_definition_bytes_set.append(DVIBytes(length=1,
-                                                          content=character,
+                                                          content=ord(character),
                                                           signed=False))
         self.bytes_set.extend(font_definition_bytes_set)
         self.font_definitions_bytes_set.extend(font_definition_bytes_set)
@@ -235,6 +249,7 @@ class DVIFile(object):
 
     def output_to_file(self, file_name):
         with open(file_name, 'wb') as file:
+            import pdb; pdb.set_trace()
             file.write(self._to_bytes())
 
 

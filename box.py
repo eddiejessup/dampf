@@ -2,10 +2,18 @@ class Node(object):
     pass
 
 
-class VList(Node):
+class ContainerListNode(Node):
 
-    def __init__(self, nodes):
+    def __init__(self, nodes=None):
+        if nodes is None:
+            nodes = []
         self.nodes = nodes
+
+    def append(self, node):
+        self.nodes.append(node)
+
+
+class VListNode(ContainerListNode):
 
     def write_to_file(self, dvi_file):
         for node in self.nodes:
@@ -15,10 +23,7 @@ class VList(Node):
             dvi_file.down(node.height)
 
 
-class HList(Node):
-
-    def __init__(self, nodes):
-        self.nodes = nodes
+class HListNode(ContainerListNode):
 
     @property
     def height(self):

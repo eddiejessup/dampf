@@ -3,6 +3,7 @@ from __future__ import (print_function, division, absolute_import,
 
 import dvi
 import box
+import tex
 
 
 def test_dvi():
@@ -57,5 +58,33 @@ def test_box():
     dvi_file.output_to_file('box_test.dvi')
 
 
+def test_tex():
+    tex_file = tex.TexFile()
+    tex_file.start_paragraph()
+    tex_file.add_character('T')
+    tex_file.add_character('h')
+    tex_file.add_character('e')
+    tex_file.add_space()
+    tex_file.add_character('s')
+    tex_file.add_character('t')
+    tex_file.add_character('a')
+    tex_file.add_character('r')
+    tex_file.add_character('t')
+    tex_file.add_character('.')
+
+    tex_file.start_paragraph()
+    tex_file.add_character('T')
+    tex_file.add_character('h')
+    tex_file.add_character('e')
+    tex_file.add_space()
+    tex_file.add_character('e')
+    tex_file.add_character('n')
+    tex_file.add_character('d')
+    tex_file.add_character('.')
+
+    dvi_file = tex_file.output_to_dvi_file()
+    dvi_file.output_to_file('tex_test.dvi')
+
+
 if __name__ == '__main__':
-    test_box()
+    test_tex()

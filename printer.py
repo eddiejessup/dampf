@@ -4,17 +4,27 @@ from PyDvi.TeXUnit import pt2sp
 
 
 class Node(object):
-    pass
+
+    @property
+    def width_sp(self):
+        return pt2sp(self.width_pt)
+
+    @property
+    def height_sp(self):
+        return pt2sp(self.height_pt)
 
 
-class PageNode(Node):
+class PrintDocumentNode(Node):
 
-    def __init__(self, paragraph_list, font):
-        self.paragraph_list = paragraph_list
+    def __init__(self, font, paragraph_spacing_pt):
+        self.paragraph_list = RegularVListNode(v_spacing_pt=paragraph_spacing_pt)
         self.font = font
         self.font_number = 0
 
-    def write_to_file(self):
+    def add_paragraph(self, paragraph):
+        self.paragraph_list.append(paragraph)
+
+    def to_dvi_document(self):
         dvi_document = dvi.DVIDocument()
         dvi_document.write_preamble()
         dvi_document.begin_page()
@@ -24,10 +34,18 @@ class PageNode(Node):
                                  design_size=pt2sp(self.font.design_font_size),
                                  file_path='cmr10')
         dvi_document.set_font(font_number=self.font_number)
-        self.paragraph_list.write_to_file(dvi_document)
+        self.paragraph_list.to_dvi_document(dvi_document)
         dvi_document.end_page()
         dvi_document.write_postamble()
         return dvi_document
+
+    @property
+    def height_pt(self):
+        return self.paragraph_list.height_pt
+
+    @property
+    def width_pt(self):
+        return self.paragraph_list.width_pt
 
 
 class ContainerListNode(Node):
@@ -36,6 +54,10 @@ class ContainerListNode(Node):
         if nodes is None:
             nodes = []
         self.nodes = nodes
+
+    @property
+    def latest(self):
+        return self.nodes[-1]
 
     def append(self, node):
         self.nodes.append(node)
@@ -51,24 +73,42 @@ class RegularVListNode(ContainerListNode):
     def v_spacing_sp(self):
         return pt2sp(self.v_spacing_pt)
 
-    def write_to_file(self, dvi_document):
+    def to_dvi_document(self, dvi_document):
         for i, node in enumerate(self.nodes):
             dvi_document.push()
-            node.write_to_file(dvi_document)
+            node.to_dvi_document(dvi_document)
             dvi_document.pop()
             if not i == len(self.nodes) - 1:
                 dvi_document.down(self.v_spacing_sp)
 
+    @property
+    def height_pt(self):
+        h = 0
+        for i, node in enumerate(self.nodes):
+            h += node.height_pt
+            h += self.v_spacing_pt
+            if not i == len(self.nodes) - 1:
+                h += self.v_spacing_pt
+        return h
+
+    @property
+    def width_pt(self):
+        return max(node.width_pt for node in self.nodes)
+
 
 class HListNode(ContainerListNode):
 
-    def write_to_file(self, dvi_document):
+    def to_dvi_document(self, dvi_document):
         for node in self.nodes:
-            node.write_to_file(dvi_document)
+            node.to_dvi_document(dvi_document)
 
     @property
-    def height(self):
-        return max(node.height for node in self.nodes)
+    def height_pt(self):
+        return max(node.height_pt for node in self.nodes)
+
+    @property
+    def width_pt(self):
+        return sum(node.width_pt for node in self.nodes)
 
 
 class CharacterNode(Node):
@@ -86,11 +126,12 @@ class CharacterNode(Node):
         return self.font.design_font_size * self.font_info.height
 
     @property
-    def height(self):
-        return pt2sp(self.height_pt)
+    def width_pt(self):
+        return self.font.design_font_size * self.font_info.width
 
-    def write_to_file(self, dvi_document):
-        dvi_document.set_character(self.character)
+    def to_dvi_document(self, dvi_document):
+        dvi_document.put_character(self.character)
+        dvi_document.right(self.width_sp)
 
 
 class HWhiteSpaceNode(Node):
@@ -99,14 +140,10 @@ class HWhiteSpaceNode(Node):
         self.width_pt = width_pt
 
     @property
-    def width_sp(self):
-        return pt2sp(self.width_pt)
-
-    @property
-    def height(self):
+    def height_pt(self):
         return 0
 
-    def write_to_file(self, dvi_document):
+    def to_dvi_document(self, dvi_document):
         dvi_document.right(self.width_sp)
 
 

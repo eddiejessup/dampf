@@ -26,6 +26,12 @@ class DVIDocument(object):
         3: 130,
         4: 131,
     }
+    put_character_op_codes = {
+        1: 133,
+        2: 134,
+        3: 135,
+        4: 136,
+    }
     begin_page_op_code = 139
     end_page_op_code = 140
     push_op_code = 141
@@ -59,8 +65,6 @@ class DVIDocument(object):
         self.last_begin_page_byte_index = -1
         self.bytes_set = []
         self.font_definitions_bytes_set = []
-        # TODO:
-        self.maximum_stack_depth = 1000
         self.number_of_pages = 0
         self.maximum_stack_depth = 0
         self.current_stack_depth = 0
@@ -177,6 +181,14 @@ class DVIDocument(object):
         if number_of_bytes > 0:
             self.bytes_set.append(DVIBytes(length=number_of_bytes, content=character_code, signed=False))
 
+    def put_character(self, character):
+        character_code = ord(character)
+        number_of_bytes = required_bytes(character_code)
+        op_code = self.put_character_op_codes[number_of_bytes]
+        self._add_op_code(op_code)
+        if number_of_bytes > 0:
+            self.bytes_set.append(DVIBytes(length=number_of_bytes, content=character_code, signed=False))
+
     def define_font(self, font_number, font_check_sum,
                     scale_factor, design_size, file_path):
         directory_path, file_name = os.path.split(file_path)
@@ -247,9 +259,8 @@ class DVIDocument(object):
     def _to_bytes(self):
         return b''.join(self._dvi_bytes_to_bytes(b) for b in self.bytes_set)
 
-    def output_to_file(self, file_name):
+    def to_file(self, file_name):
         with open(file_name, 'wb') as file:
-            import pdb; pdb.set_trace()
             file.write(self._to_bytes())
 
 

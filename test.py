@@ -3,8 +3,8 @@ from __future__ import (print_function, division, absolute_import,
 
 import dvi
 import box
-import tex
-import tex_parser
+import layout
+import layout_parser
 
 
 def test_dvi():
@@ -34,7 +34,7 @@ def test_dvi():
     dvi_document.pop()
     dvi_document.end_page()
     dvi_document.write_postamble()
-    dvi_document.output_to_file('test.dvi')
+    dvi_document.to_file('test.dvi')
 
 
 def test_box():
@@ -56,7 +56,7 @@ def test_box():
     v_list_all.write_to_file(dvi_document)
     dvi_document.end_page()
     dvi_document.write_postamble()
-    dvi_document.output_to_file('box_test.dvi')
+    dvi_document.to_file('box_test.dvi')
 
 
 def test_tex():
@@ -83,24 +83,24 @@ def test_tex():
     tex_page.add_character('d')
     tex_page.add_character('.')
 
-    dvi_document = tex_page.output_to_dvi_file()
-    dvi_document.output_to_file('tex_test.dvi')
+    dvi_document = tex_page.to_dvi_document()
+    dvi_document.to_file('tex_test.dvi')
 
 
 def test_parser():
     data = 'ab \n\nima'
-    r = tex_parser.parser.parse(data)
-    tex_page = r.to_tex_page()
-    dvi_file = tex_page.output_to_dvi_file()
-    dvi_file.output_to_file('parser_test.dvi')
+    r = layout_parser.parser.parse(data)
+    tex_page = r.to_print_document()
+    dvi_file = tex_page.to_dvi_document()
+    dvi_file.to_file('parser_test.dvi')
 
 
 def test_parser_from_file():
-    data = open('parser_test_file.tex', 'r').read()[:-1]
-    r = tex_parser.parser.parse(data)
-    tex_page = r.to_tex_page()
-    dvi_file = tex_page.output_to_dvi_file()
-    dvi_file.output_to_file('parser_test_from_file.dvi')
+    layout_lang_text = open('parser_test_file.tex', 'r').read()[:-1]
+    layout_document = layout_parser.parse(layout_lang_text)
+    print_document = layout.layout_to_print(layout_document)
+    dvi_document = print_document.to_dvi_document()
+    dvi_document.to_file('parser_test_from_file.dvi')
 
 
 if __name__ == '__main__':

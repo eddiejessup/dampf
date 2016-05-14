@@ -2,9 +2,9 @@ from __future__ import (print_function, division, absolute_import,
                         unicode_literals)
 
 import dvi
-import box
+import printing
 import layout
-import layout_parser
+import layla_parser
 
 
 def test_dvi():
@@ -89,17 +89,17 @@ def test_tex():
 
 def test_parser():
     data = 'ab \n\nima'
-    r = layout_parser.parser.parse(data)
+    r = layla_parser.parser.parse(data)
     tex_page = r.to_print_document()
     dvi_file = tex_page.to_dvi_document()
     dvi_file.to_file('parser_test.dvi')
 
 
 def test_parser_from_file():
-    layout_lang_text = open('parser_test_file.tex', 'r').read()[:-1]
-    layout_document = layout_parser.parse(layout_lang_text)
+    layla_text = open('parser_test_file.tex', 'r').read()[:-1]
+    layout_document = layla_parser.layla_to_layout(layla_text)
     print_document = layout.layout_to_print(layout_document)
-    dvi_document = print_document.to_dvi_document()
+    dvi_document = printing.print_to_dvi(print_document)
     dvi_document.to_file('parser_test_from_file.dvi')
 
 

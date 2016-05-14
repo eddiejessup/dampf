@@ -1,6 +1,6 @@
 import ply.yacc as yacc
 
-from layout_lexer import tokens
+from layla_lexer import tokens
 import layout
 
 
@@ -56,5 +56,5 @@ def p_error(p):
 parser = yacc.yacc(debug=True)
 
 
-def parse(data):
-    return parser.parse(data)
+def layla_to_layout(text):
+    return parser.parse(text)

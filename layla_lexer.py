@@ -8,7 +8,7 @@ tokens = (
 )
 
 t_CHARACTER = r'.'
-t_SPACE = r'[ ]+'
+t_SPACE = r'[ ]{1}'
 t_NEW_PARAGRAPH = r'\n\n'
 
 

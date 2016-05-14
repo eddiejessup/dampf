@@ -192,6 +192,9 @@ class DVIDocument(object):
     def define_font(self, font_number, font_check_sum,
                     scale_factor, design_size, file_path):
         directory_path, file_name = os.path.split(file_path)
+        # TODO:
+        directory_path = ''
+        font_name = os.path.splitext(file_name)[0]
         number_of_bytes = required_bytes(font_number)
         op_code = self.define_font_op_codes[number_of_bytes]
         font_definition_bytes_set = [
@@ -201,10 +204,10 @@ class DVIDocument(object):
             DVIBytes(length=4, content=scale_factor, signed=False),
             DVIBytes(length=4, content=design_size, signed=False),
             DVIBytes(length=1, content=len(directory_path), signed=False),
-            DVIBytes(length=1, content=len(file_name), signed=False),
+            DVIBytes(length=1, content=len(font_name), signed=False),
         ]
         if file_path:
-            for character in file_path:
+            for character in directory_path + font_name:
                 font_definition_bytes_set.append(DVIBytes(length=1,
                                                           content=ord(character),
                                                           signed=False))

@@ -4,19 +4,55 @@ from layla_lexer import tokens
 import layout
 
 
-def p_document_append_paragraph(p):
-    '''document : document NEW_PARAGRAPH paragraph
+function_name_map = {
+    'vskip': layout.VSkip,
+}
+
+
+def p_document_append_component(p):
+    '''document : document NEW_PARAGRAPH component
     '''
-    p[1].paragraphs.append(p[3])
+    p[1].components.append(p[3])
     p[0] = p[1]
 
 
-def p_document_paragraph(p):
-    '''document : paragraph
+def p_document_component(p):
+    '''document : component
     '''
     document = layout.LayoutDocument()
-    document.paragraphs.append(p[1])
+    document.components.append(p[1])
     p[0] = document
+
+
+def p_component_function(p):
+    '''component : function'''
+    p[0] = p[1]
+
+
+def p_function_constituents(p):
+    '''function : FUNCTION_NAME argument_list'''
+    FunctionFactory = function_name_map[p[1]]
+    p[0] = FunctionFactory(*p[2])
+
+
+def p_argument_list_append(p):
+    '''argument_list : argument_list argument'''
+    p[0] = p[1] + [p[2]]
+
+
+def p_argument_list(p):
+    '''argument_list : argument'''
+    p[0] = [p[1]]
+
+
+def p_argument_length(p):
+    '''argument : LENGTH_PT'''
+    p[0] = layout.LengthPoint(p[1])
+
+
+def p_component_paragraph(p):
+    '''component : paragraph'''
+    p[0] = p[1]
 
 
 def p_paragraph_mover_append(p):

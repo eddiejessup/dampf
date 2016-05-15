@@ -5,6 +5,7 @@ import dvi
 import printing
 import layout
 import layla_parser
+import layla_lexer
 
 
 def test_dvi():
@@ -95,6 +96,20 @@ def test_parser():
     dvi_file.to_file('parser_test.dvi')
 
 
+def test_lexer_from_file():
+    layla_text = open('parser_test_file.tex', 'r').read()[:-1]
+    layla_lexer.lexer.input(layla_text)
+    tokens = []
+    while True:
+        token = layla_lexer.lexer.token()
+        if token is None:
+            break
+        if token.type in ['CHARACTER', 'SPACE']:
+            continue
+        tokens.append(token)
+    import pdb; pdb.set_trace()
+
+
 def test_parser_from_file():
     layla_text = open('parser_test_file.tex', 'r').read()[:-1]
     layout_document = layla_parser.layla_to_layout(layla_text)
@@ -104,4 +119,5 @@ def test_parser_from_file():
 
 
 if __name__ == '__main__':
+    # test_lexer_from_file()
     test_parser_from_file()

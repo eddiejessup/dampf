@@ -1,0 +1,8 @@
+*.pyc
+*.pdf
+*.dvi
+*.tex
+*.out
+*.log
+.DS_Store
+parsetab.py

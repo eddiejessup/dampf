@@ -32,10 +32,28 @@ class Paragraph(object):
         return printing.HListNode()
 
 
+class Function(object):
+
+    def __init__(self, *args):
+        self.args = args
+
+
+class VSkip(Function):
+
+    def __init__(self, height_pt):
+        self.height_pt = height_pt.number
+
+
+class LengthPoint(object):
+
+    def __init__(self, number):
+        self.number = number
+
+
 class LayoutDocument(object):
 
     def __init__(self):
-        self.paragraphs = []
+        self.components = []
 
 
 def space_words_to_width(line, line_width_pt):
@@ -71,28 +89,34 @@ def layout_to_print(layout_document, line_spacing_frac=1.2,
 
     print_document = printing.PrintDocumentNode()
     print_document.add_font(font)
-    print_paragraph_list = printing.SpacedVListNode(v_spacing_pt=paragraph_spacing_pt)
-    for layout_paragraph in layout_document.paragraphs:
-        print_paragraph = printing.RegularVListNode(v_spacing_pt=line_spacing_pt)
-        line = layout_paragraph.get_new_line_node()
-        print_paragraph.append(line)
-        for mover in layout_paragraph.movers:
-            if isinstance(mover, Indentation):
-                h_node = printing.HWhiteSpaceNode(width_pt=indentation_width_pt)
-                print_paragraph.latest.append(h_node)
-            elif isinstance(mover, Space):
-                h_node = printing.HWhiteSpaceNode(width_pt=word_space_pt)
-                print_paragraph.latest.append(h_node)
-            elif isinstance(mover, Character):
-                h_node = printing.CharacterNode(mover.character.encode(),
-                                                font=font)
-                print_paragraph.latest.append(h_node)
-            wrap_line_if_needed(layout_paragraph, print_paragraph,
-                                line_width_pt)
-        print_paragraph_list.append(print_paragraph)
+    for i, layout_component in enumerate(layout_document.components):
+        if i < len(layout_document.components) - 1:
+            next_layout_component = layout_document.components[i + 1]
+        else:
+            next_layout_component = None
 
-    for print_paragraph in print_paragraph_list.nodes:
-        for line in print_paragraph.nodes[:-1]:
-            space_words_to_width(line, line_width_pt)
-    print_document.append(print_paragraph_list)
+        if isinstance(layout_component, Paragraph):
+            print_paragraph = printing.RegularVListNode(v_spacing_pt=line_spacing_pt)
+            line = layout_component.get_new_line_node()
+            print_paragraph.append(line)
+            for mover in layout_component.movers:
+                if isinstance(mover, Indentation):
+                    h_node = printing.HWhiteSpaceNode(width_pt=indentation_width_pt)
+                    print_paragraph.latest.append(h_node)
+                elif isinstance(mover, Space):
+                    h_node = printing.HWhiteSpaceNode(width_pt=word_space_pt)
+                    print_paragraph.latest.append(h_node)
+                elif isinstance(mover, Character):
+                    h_node = printing.CharacterNode(mover.character.encode(),
+                                                    font=font)
+                    print_paragraph.latest.append(h_node)
+                wrap_line_if_needed(layout_component, print_paragraph,
+                                    line_width_pt)
+            for line in print_paragraph.nodes[:-1]:
+                space_words_to_width(line, line_width_pt)
+            print_document.append(print_paragraph)
+            if isinstance(next_layout_component, Paragraph):
+                print_document.append(printing.VWhiteSpaceNode(height_pt=paragraph_spacing_pt))
+        elif isinstance(layout_component, VSkip):
+            print_document.append(printing.VWhiteSpaceNode(height_pt=layout_component.height_pt))
     return print_document

@@ -95,8 +95,7 @@ class RegularVListNode(SpacedVListNode):
             dvi_document.push()
             node.write_to_dvi_document(dvi_document)
             dvi_document.pop()
-            if not i == len(self.nodes) - 1:
-                dvi_document.down(self.v_spacing_sp)
+            dvi_document.down(self.v_spacing_sp)
 
 
 class HListNode(ContainerListNode):
@@ -170,6 +169,23 @@ class HWhiteSpaceNode(Node):
 
     def write_to_dvi_document(self, dvi_document):
         dvi_document.right(self.width_sp)
+
+
+class VWhiteSpaceNode(Node):
+
+    def __init__(self, height_pt):
+        self.height_pt = height_pt
+        self.height_pt_base = self.height_pt
+
+    @property
+    def width_pt(self):
+        return 0
+
+    def scale(self, scale_factor):
+        self.height_pt *= scale_factor
+
+    def write_to_dvi_document(self, dvi_document):
+        dvi_document.down(self.height_sp)
 
 
 def print_to_dvi(print_document):

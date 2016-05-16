@@ -56,6 +56,23 @@ class LengthPoint(object):
         self.number = number
 
 
+class Mode(object):
+
+    pass
+
+
+class RaggedRightMode(Mode):
+
+    pass
+
+
+class ModedComponent(object):
+
+    def __init__(self, component, mode):
+        self.mode = mode
+        self.component = component
+
+
 class LayoutDocument(object):
 
     def __init__(self):
@@ -105,7 +122,6 @@ def layout_to_print(layout_document, line_spacing_frac=1.2,
             print_paragraph = printing.RegularVListNode(v_spacing_pt=line_spacing_pt)
             line = layout_component.get_new_line_node()
             print_paragraph.append(line)
-            # import pdb; pdb.set_trace()
             for mover in layout_component.movers:
                 if isinstance(mover, Indentation):
                     h_node = printing.HWhiteSpaceNode(width_pt=indentation_width_pt)

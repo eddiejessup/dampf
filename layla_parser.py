@@ -10,10 +10,15 @@ function_name_map = {
 }
 
 
+mode_name_map = {
+    'raggedRight': layout.RaggedRightMode
+}
+
+
 def p_document_append_component(p):
-    '''document : document NEW_PARAGRAPH component
+    '''document : document component
     '''
-    p[1].components.append(p[3])
+    p[1].components.append(p[2])
     p[0] = p[1]
 
 
@@ -23,6 +28,20 @@ def p_document_component(p):
     document = layout.LayoutDocument()
     document.components.append(p[1])
     p[0] = document
+
+
+def p_wrapped_component(p):
+    '''component : BEGIN_MODE ended_component'''
+    begin_mode, component, end_mode = p[1], p[2][0], p[2][1]
+    if not begin_mode == end_mode:
+        import pdb; pdb.set_trace()
+        raise Exception
+    p[0] = layout.ModedComponent(component=component, mode=begin_mode)
+
+
+def p_component_with_end(p):
+    '''ended_component : component END_MODE'''
+    p[0] = (p[1], p[2])
 
 
 def p_component_function(p):

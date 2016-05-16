@@ -9,8 +9,9 @@ tokens = (
     'FUNCTION_NAME',
     'CHARACTER',
     'SPACE',
-    'NEW_PARAGRAPH',
     'LENGTH_PT',
+    'BEGIN_MODE',
+    'END_MODE',
 )
 
 BEGIN_FUNCTION_ARGS = r'\{'
@@ -21,7 +22,23 @@ FUNCTION_NAME = r'\\.+'
 
 t_CHARACTER = r'.'
 t_SPACE = r'[ ]{1}'
-t_NEW_PARAGRAPH = r'\n\n'
+
+
+def t_NEW_COMPONENT(t):
+    r'\n\n'
+    pass
+
+
+def t_END_MODE(t):
+    r'\<\/.+\>'
+    t.value = t.value[2:-1]
+    return t
+
+
+def t_BEGIN_MODE(t):
+    r'\<.+\>'
+    t.value = t.value[1:-1]
+    return t
 
 
 def t_begin_function(t):

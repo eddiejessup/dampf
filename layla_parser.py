@@ -15,55 +15,79 @@ mode_name_map = {
 }
 
 
-def p_document_append_component(p):
-    '''document : document component
+def p_document_append_node(p):
+    '''document : document NEW_COMPONENT node
     '''
-    p[1].components.append(p[2])
+    p[1].append(p[3])
     p[0] = p[1]
 
 
-def p_document_component(p):
-    '''document : component
+def p_document_node(p):
+    '''document : node
     '''
     document = layout.LayoutDocument()
-    document.components.append(p[1])
+    document.append(p[1])
     p[0] = document
 
 
-def p_wrapped_component(p):
-    '''component : BEGIN_MODE ended_component'''
-    begin_mode, component, end_mode = p[1], p[2][0], p[2][1]
-    if not begin_mode == end_mode:
-        import pdb; pdb.set_trace()
-        raise Exception
-    p[0] = layout.ModedComponent(component=component, mode=begin_mode)
+def p_moded_node(p):
+    '''started_mode_node : BEGIN_MODE NEW_COMPONENT node'''
+    ModeFactory = mode_name_map[p[1]]
+    mode = ModeFactory()
+    p[0] = layout.ModedNode(mode=mode)
+    p[0].append(p[3])
 
 
-def p_component_with_end(p):
-    '''ended_component : component END_MODE'''
-    p[0] = (p[1], p[2])
-
-
-def p_component_function(p):
-    '''component : function'''
+def p_moded_node_append(p):
+    '''started_mode_node : started_mode_node NEW_COMPONENT node'''
+    p[1].append(p[3])
     p[0] = p[1]
 
 
-def p_component_paragraph(p):
-    '''component : paragraph'''
+def p_node_moded_node(p):
+    '''node : started_mode_node NEW_COMPONENT END_MODE'''
+    p[0] = p[1]
+
+# def p_moded_node(p):
+#     '''moded_node : node END_MODE'''
+#     p[0] = (p[1], p[2])
+# def p_node_moded_node(p):
+#     '''node : BEGIN_MODE moded_node'''
+#     begin_mode, node, end_mode = p[1], p[2][0], p[2][1]
+#     if not begin_mode == end_mode:
+#         import pdb; pdb.set_trace()
+#         raise Exception
+#     ModeFactory = mode_name_map[begin_mode]
+#     mode = ModeFactory()
+#     p[0] = layout.ModedNode(mode=mode)
+#     p[0].append(node)
+
+
+# def p_moded_node(p):
+#     '''moded_node : node END_MODE'''
+#     p[0] = (p[1], p[2])
+
+
+def p_node_function(p):
+    '''node : function'''
+    p[0] = p[1]
+
+
+def p_node_paragraph(p):
+    '''node : paragraph'''
     p[0] = p[1]
 
 
 def p_paragraph_mover_append(p):
     '''paragraph : paragraph mover'''
-    p[1].add_mover(p[2])
+    p[1].append(p[2])
     p[0] = p[1]
 
 
 def p_paragraph_mover(p):
     '''paragraph : mover'''
     paragraph = layout.Paragraph()
-    paragraph.add_mover(p[1])
+    paragraph.append(p[1])
     p[0] = paragraph
 
 
@@ -88,7 +112,7 @@ def p_layout_space_space(p):
 def p_function_constituents(p):
     '''function : FUNCTION_NAME argument_list'''
     FunctionFactory = function_name_map[p[1]]
-    p[0] = FunctionFactory(*p[2])
+    p[0] = FunctionFactory(func_args=p[2])
 
 
 def p_argument_list_append(p):

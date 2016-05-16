@@ -113,7 +113,7 @@ def test_lexer_from_file():
 def test_parser_from_file():
     layla_text = open('parser_test_file.tex', 'r').read()[:-1]
     layout_document = layla_parser.layla_to_layout(layla_text)
-    print_document = layout.layout_to_print(layout_document)
+    print_document = layout_document.to_print_document()
     dvi_document = printing.print_to_dvi(print_document)
     dvi_document.to_file('parser_test_from_file.dvi')
 

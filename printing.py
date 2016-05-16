@@ -204,3 +204,12 @@ def print_to_dvi(print_document):
     dvi_document.end_page()
     dvi_document.write_postamble()
     return dvi_document
+
+
+def space_words_to_width(line, line_width_pt):
+    width_to_make = line_width_pt - line.width_pt
+    white_space_width_pt = sum(node.width_pt
+                               for node in line.white_space_nodes)
+    scale_factor = 1.0 + width_to_make / white_space_width_pt
+    for node in line.white_space_nodes:
+        node.scale(scale_factor)

@@ -12,6 +12,7 @@ tokens = (
     'LENGTH_PT',
     'BEGIN_MODE',
     'END_MODE',
+    'NEW_COMPONENT',
 )
 
 BEGIN_FUNCTION_ARGS = r'\{'
@@ -26,7 +27,7 @@ t_SPACE = r'[ ]{1}'
 
 def t_NEW_COMPONENT(t):
     r'\n\n'
-    pass
+    return t
 
 
 def t_END_MODE(t):

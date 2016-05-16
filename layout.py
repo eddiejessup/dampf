@@ -44,6 +44,12 @@ class VSkip(Function):
         self.height_pt = height_pt.number
 
 
+class HSkip(Function):
+
+    def __init__(self, width_pt):
+        self.width_pt = width_pt.number
+
+
 class LengthPoint(object):
 
     def __init__(self, number):
@@ -85,7 +91,7 @@ def layout_to_print(layout_document, line_spacing_frac=1.2,
     paragraph_spacing_pt = font.design_font_size * paragraph_spacing_frac
     line_width_pt = font.design_font_size * line_width_frac
 
-    word_space_pt = font.design_font_size * font[ord(word_space_equiv_character)].width
+    space_width_pt = font.design_font_size * font[ord(word_space_equiv_character)].width
 
     print_document = printing.PrintDocumentNode()
     print_document.add_font(font)
@@ -99,16 +105,20 @@ def layout_to_print(layout_document, line_spacing_frac=1.2,
             print_paragraph = printing.RegularVListNode(v_spacing_pt=line_spacing_pt)
             line = layout_component.get_new_line_node()
             print_paragraph.append(line)
+            # import pdb; pdb.set_trace()
             for mover in layout_component.movers:
                 if isinstance(mover, Indentation):
                     h_node = printing.HWhiteSpaceNode(width_pt=indentation_width_pt)
                     print_paragraph.latest.append(h_node)
                 elif isinstance(mover, Space):
-                    h_node = printing.HWhiteSpaceNode(width_pt=word_space_pt)
+                    h_node = printing.HWhiteSpaceNode(width_pt=space_width_pt)
                     print_paragraph.latest.append(h_node)
                 elif isinstance(mover, Character):
                     h_node = printing.CharacterNode(mover.character.encode(),
                                                     font=font)
+                    print_paragraph.latest.append(h_node)
+                elif isinstance(mover, HSkip):
+                    h_node = printing.HWhiteSpaceNode(width_pt=mover.width_pt)
                     print_paragraph.latest.append(h_node)
                 wrap_line_if_needed(layout_component, print_paragraph,
                                     line_width_pt)

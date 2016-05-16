@@ -11,7 +11,8 @@ function_name_map = {
 
 
 mode_name_map = {
-    'raggedRight': layout.RaggedRightMode
+    'raggedRight': layout.RaggedRightMode,
+    'center': layout.CenterMode,
 }
 
 

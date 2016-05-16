@@ -63,6 +63,7 @@ class LayoutDocument(LayoutBranchNode):
             'line_width_pt': line_width_pt,
             'space_width_pt': space_width_pt,
             'paragraph_spacing_pt': paragraph_spacing_pt,
+            'line_h_alignment': 'JUSTIFY',
         }
 
     def setting(self, key):
@@ -81,9 +82,8 @@ class LayoutDocument(LayoutBranchNode):
                 if next_layout_node is not None:
                     break
 
-            if isinstance(layout_node, (VSkip, Paragraph, ModedNode)):
-                v_nodes = layout_node.to_print_nodes(next_layout_node)
-                print_document.extend(v_nodes)
+            v_nodes = layout_node.to_print_nodes(next_layout_node)
+            print_document.extend(v_nodes)
         return print_document
 
 
@@ -153,8 +153,13 @@ class Paragraph(LayoutBranchNode):
                 print_paragraph.latest.append(h_node)
             self.wrap_line_if_needed(print_paragraph,
                                      self.setting('line_width_pt'))
-        for line in print_paragraph.nodes[:-1]:
-            printing.space_words_to_width(line, self.setting('line_width_pt'))
+        if self.setting('line_h_alignment') == 'JUSTIFY':
+            for line in print_paragraph.nodes[:-1]:
+                printing.space_words_to_width(line, self.setting('line_width_pt'))
+        elif self.setting('line_h_alignment') == 'CENTER':
+            for line in print_paragraph.nodes:
+                printing.translate_line_to_centre(line, self.setting('line_width_pt'))
+
         v_nodes = []
         v_nodes.append(print_paragraph)
         if isinstance(next_layout_node, Paragraph):
@@ -221,9 +226,17 @@ class Mode(object):
     pass
 
 
+class CenterMode(Mode):
+
+    def __init__(self):
+        self.settings = {
+            'line_h_alignment': 'CENTER',
+        }
+
+
 class RaggedRightMode(Mode):
 
     def __init__(self):
         self.settings = {
-            'line_width_pt': 300.0,
+            'line_h_alignment': 'RAGGED_RIGHT',
         }

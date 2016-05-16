@@ -207,9 +207,18 @@ def print_to_dvi(print_document):
 
 
 def space_words_to_width(line, line_width_pt):
+    '''Simple justification algorithm.'''
     width_to_make = line_width_pt - line.width_pt
     white_space_width_pt = sum(node.width_pt
                                for node in line.white_space_nodes)
     scale_factor = 1.0 + width_to_make / white_space_width_pt
     for node in line.white_space_nodes:
         node.scale(scale_factor)
+
+
+def translate_line_to_centre(line, line_width_pt):
+    '''Line centering algorithm.'''
+    width_to_translate_pt = (line_width_pt - line.width_pt) / 2.0
+    h_white_space_node = HWhiteSpaceNode(width_pt=width_to_translate_pt)
+    # import pdb; pdb.set_trace()
+    line.nodes.insert(0, h_white_space_node)

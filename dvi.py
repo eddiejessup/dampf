@@ -271,6 +271,5 @@ def required_bytes(integer):
     if integer == 0:
         return 1
     n = int(math.log(abs(integer), 256)) + 1
-    if integer < 0:
-        n += 1
+    n += 1
     return n

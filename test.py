@@ -101,7 +101,11 @@ def test_lexer_from_file():
     layla_lexer.lexer.input(layla_text)
     tokens = []
     while True:
-        token = layla_lexer.lexer.token()
+        try:
+            token = layla_lexer.lexer.token()
+        except:
+            import pdb; pdb.set_trace()
+            raise
         if token is None:
             break
         if token.type in ['CHARACTER', 'SPACE']:
@@ -119,5 +123,5 @@ def test_parser_from_file():
 
 
 if __name__ == '__main__':
-    # test_lexer_from_file()
-    test_parser_from_file()
+    test_lexer_from_file()
+    # test_parser_from_file()

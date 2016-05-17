@@ -13,6 +13,7 @@ function_name_map = {
 mode_name_map = {
     'raggedRight': layout.RaggedRightMode,
     'center': layout.CenterMode,
+    'justified': layout.JustifyMode,
 }
 
 
@@ -47,26 +48,10 @@ def p_moded_node_append(p):
 
 def p_node_moded_node(p):
     '''node : started_mode_node NEW_COMPONENT END_MODE'''
+    ModeFactory = mode_name_map[p[3]]
+    if not p[1].mode.__class__ == ModeFactory:
+        raise Exception
     p[0] = p[1]
-
-# def p_moded_node(p):
-#     '''moded_node : node END_MODE'''
-#     p[0] = (p[1], p[2])
-# def p_node_moded_node(p):
-#     '''node : BEGIN_MODE moded_node'''
-#     begin_mode, node, end_mode = p[1], p[2][0], p[2][1]
-#     if not begin_mode == end_mode:
-#         import pdb; pdb.set_trace()
-#         raise Exception
-#     ModeFactory = mode_name_map[begin_mode]
-#     mode = ModeFactory()
-#     p[0] = layout.ModedNode(mode=mode)
-#     p[0].append(node)
-
-
-# def p_moded_node(p):
-#     '''moded_node : node END_MODE'''
-#     p[0] = (p[1], p[2])
 
 
 def p_node_function(p):

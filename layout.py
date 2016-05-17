@@ -240,3 +240,11 @@ class RaggedRightMode(Mode):
         self.settings = {
             'line_h_alignment': 'RAGGED_RIGHT',
         }
+
+
+class JustifyMode(Mode):
+
+    def __init__(self):
+        self.settings = {
+            'line_h_alignment': 'JUSTIFY',
+        }

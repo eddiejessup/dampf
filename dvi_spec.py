@@ -10,6 +10,9 @@ class EncodedValue(object):
         self.name = name
         self.value = value
 
+    def nr_bytes(self):
+        return len(self.encode())
+
 
 class EncodedInteger(EncodedValue):
 
@@ -37,8 +40,15 @@ class EncodedInteger(EncodedValue):
 class EncodedOperation(EncodedValue):
 
     def __init__(self, op_code):
-        self.name = op_code.name
-        self.value = op_code.value
+        self.op_code = op_code
+
+    @property
+    def name(self):
+        return self.op_code.name
+
+    @property
+    def value(self):
+        return self.op_code.value
 
     def encode(self):
         return _encode_integer_to_bytes(length=1, value=self.value,
@@ -59,6 +69,24 @@ class EncodedString(EncodedValue):
                                                          len(self.value))
 
 
+class EncodedInstruction(EncodedValue):
+
+    def __init__(self, op_code, *arguments):
+        self.op_code = op_code
+        self.arguments = list(arguments)
+
+    @property
+    def encoded_op_code(self):
+        return EncodedOperation(self.op_code)
+
+    @property
+    def op_and_args(self):
+        return [self.encoded_op_code] + self.arguments
+
+    def encode(self):
+        return b''.join(b.encode() for b in self.op_and_args)
+
+
 def _encode_integer_to_bytes(length, value, signed=False,
                              allow_unsigned_4_byte=False):
     if not allow_unsigned_4_byte and length == 4:
@@ -71,99 +99,103 @@ def _encode_integer_to_bytes(length, value, signed=False,
         import pdb; pdb.set_trace()
 
 
-no_arg_char_op_codes = list(range(128))
-no_arg_select_font_nr_op_codes = list(range(171, 235))
+op_codes = {
+    # 0 to 127: set that character number.
 
+    'set_1_byte_char': 128,
+    'set_2_byte_char': 129,
+    'set_3_byte_char': 130,
+    'set_4_byte_char': 131,
 
-class OpCode(Enum):
-    set_1_byte_char = 128
-    set_2_byte_char = 129
-    set_3_byte_char = 130
-    set_4_byte_char = 131
+    'set_rule': 132,
 
-    set_rule = 132
+    'put_1_byte_char': 133,
+    'put_2_byte_char': 134,
+    'put_3_byte_char': 135,
+    'put_4_byte_char': 136,
 
-    put_1_byte_char = 133
-    put_2_byte_char = 134
-    put_3_byte_char = 135
-    put_4_byte_char = 136
+    'put_rule': 137,
 
-    put_rule = 137
+    'no_op': 138,
 
-    no_op = 138
+    'begin_page': 139,
+    'end_page': 140,
 
-    begin_page = 139
-    end_page = 140
+    'push': 141,
+    'pop': 142,
 
-    push = 141
-    pop = 142
+    'right_1_byte': 143,
+    'right_2_byte': 144,
+    'right_3_byte': 145,
+    'right_4_byte': 146,
 
-    right_1_byte = 143
-    right_2_byte = 144
-    right_3_byte = 145
-    right_4_byte = 146
+    'right_w': 147,
+    'set_1_byte_w_then_right_w': 148,
+    'set_2_byte_w_then_right_w': 149,
+    'set_3_byte_w_then_right_w': 150,
+    'set_4_byte_w_then_right_w': 151,
 
-    right_w = 147
-    set_1_byte_w_then_right_w = 148
-    set_2_byte_w_then_right_w = 149
-    set_3_byte_w_then_right_w = 150
-    set_4_byte_w_then_right_w = 151
+    'right_x': 147,
+    'set_1_byte_x_then_right_x': 148,
+    'set_2_byte_x_then_right_x': 149,
+    'set_3_byte_x_then_right_x': 150,
+    'set_4_byte_x_then_right_x': 151,
 
-    right_x = 147
-    set_1_byte_x_then_right_x = 148
-    set_2_byte_x_then_right_x = 149
-    set_3_byte_x_then_right_x = 150
-    set_4_byte_x_then_right_x = 151
+    'down_1_byte': 152,
+    'down_2_byte': 153,
+    'down_3_byte': 154,
+    'down_4_byte': 155,
 
-    down_1_byte = 152
-    down_2_byte = 153
-    down_3_byte = 154
-    down_4_byte = 155
+    'down_y': 147,
+    'set_1_byte_y_then_down_y': 148,
+    'set_2_byte_y_then_down_y': 149,
+    'set_3_byte_y_then_down_y': 150,
+    'set_4_byte_y_then_down_y': 151,
 
-    down_y = 147
-    set_1_byte_y_then_down_y = 148
-    set_2_byte_y_then_down_y = 149
-    set_3_byte_y_then_down_y = 150
-    set_4_byte_y_then_down_y = 151
-
-    down_z = 147
-    set_1_byte_z_then_down_z = 148
-    set_2_byte_z_then_down_z = 149
-    set_3_byte_z_then_down_z = 150
-    set_4_byte_z_then_down_z = 151
+    'down_z': 147,
+    'set_1_byte_z_then_down_z': 148,
+    'set_2_byte_z_then_down_z': 149,
+    'set_3_byte_z_then_down_z': 150,
+    'set_4_byte_z_then_down_z': 151,
 
     # 171 to 234: Select font number.
 
-    select_1_byte_font_nr = 235
-    select_2_byte_font_nr = 236
-    select_3_byte_font_nr = 237
-    select_4_byte_font_nr = 238
+    'select_1_byte_font_nr': 235,
+    'select_2_byte_font_nr': 236,
+    'select_3_byte_font_nr': 237,
+    'select_4_byte_font_nr': 238,
 
-    do_1_byte_special = 239
-    do_2_byte_special = 240
-    do_3_byte_special = 241
-    do_4_byte_special = 242
+    'do_1_byte_special': 239,
+    'do_2_byte_special': 240,
+    'do_3_byte_special': 241,
+    'do_4_byte_special': 242,
 
-    define_1_byte_font_nr = 243
-    define_2_byte_font_nr = 244
-    define_3_byte_font_nr = 245
-    define_4_byte_font_nr = 246
+    'define_1_byte_font_nr': 243,
+    'define_2_byte_font_nr': 244,
+    'define_3_byte_font_nr': 245,
+    'define_4_byte_font_nr': 246,
 
-    preamble = 247
-    postamble = 248
-    post_postamble = 249
+    'preamble': 247,
+    'postamble': 248,
+    'post_postamble': 249,
+}
+no_arg_char_op_codes = list(range(128))
+op_codes.update({'set_char_{}'.format(i): i
+                 for i in no_arg_char_op_codes})
+no_arg_select_font_nr_op_codes = list(range(171, 235))
+op_codes.update({'select_font_nr_{}'.format(i): i
+                 for i in no_arg_select_font_nr_op_codes})
+OpCode = Enum('OpCode', op_codes)
 
 
 def get_simple_instruction_func(op_code, *string_getters):
-    op_code_encoded = EncodedOperation(op_code)
-
     def get_instruction(*values):
         if not len(values) == len(string_getters):
             raise ValueError
-        encodeds = [op_code_encoded]
+        encodeds = []
         for string_getter, value in zip(string_getters, values):
             encodeds.append(string_getter(value))
-        return encodeds
+        return EncodedInstruction(op_code, *encodeds)
     return get_instruction
 
 
@@ -173,8 +205,6 @@ def g(length, signed=False, name=''):
 
 
 def get_define_font_nr_instruction_func(op_code, font_nr_length_bytes):
-    op_code_encoded = EncodedOperation(op_code)
-
     def get_define_font_nr_instruction(font_nr, check_sum,
                                        scale_factor, design_size,
                                        font_path):
@@ -198,23 +228,20 @@ def get_define_font_nr_instruction_func(op_code, font_nr_length_bytes):
 
         font_path_encoded = EncodedString(value=font_path, name='font_path')
 
-        encodeds = [font_nr_encoded, check_sum_encoded,
-                    scale_factor_encoded, design_size_encoded,
-                    dir_path_length_encoded, file_name_length_encoded,
-                    font_path_encoded]
-        return [op_code_encoded] + encodeds
+        return EncodedInstruction(op_code, font_nr_encoded, check_sum_encoded,
+                                  scale_factor_encoded, design_size_encoded,
+                                  dir_path_length_encoded,
+                                  file_name_length_encoded, font_path_encoded)
     return get_define_font_nr_instruction
 
 
 def get_do_special_instruction_func(op_code, command_length_bytes):
-    op_code_encoded = EncodedOperation(op_code)
-
     def get_do_special_instruction(command):
         command_length_encoded = EncodedInteger(length=command_length_bytes,
                                                 value=len(command))
         command_encoded = EncodedString(value=command, name='special_command')
-        return [op_code_encoded,
-                command_length_encoded, command_encoded]
+        return EncodedInstruction(op_code,
+                                  command_length_encoded, command_encoded)
     return get_do_special_instruction
 
 # Rules.
@@ -312,13 +339,15 @@ get_no_op_instruction = get_simple_instruction_func(OpCode.no_op)
 def get_small_set_char_instruction_func(char):
     if char not in no_arg_char_op_codes:
         raise ValueError
-    return [EncodedInteger(length=1, value=char, name='small_set_char')]
+    op_code_nr = char
+    return EncodedInstruction(OpCode(op_code_nr))
 
 
 def get_small_select_font_nr_instruction(font_nr):
     if font_nr not in no_arg_select_font_nr_op_codes:
         raise ValueError
-    return [EncodedInteger(length=1, value=font_nr, name='small_select_font_nr')]
+    op_code_nr = font_nr + no_arg_select_font_nr_op_codes[0]
+    return EncodedInstruction(OpCode(op_code_nr))
 
 
 postamble_parameters = [
@@ -339,8 +368,6 @@ get_postamble_instruction = get_simple_instruction_func(OpCode.postamble,
 
 def get_preamble_instruction(dvi_format, numerator, denominator, magnification,
                              comment):
-    op_code_encoded = EncodedOperation(OpCode.preamble)
-
     dvi_format_encoded = EncodedInteger(length=1, value=dvi_format,
                                         name='dvi_format')
     # Define a fraction by which all dimensions should be multiplied to get
@@ -358,9 +385,10 @@ def get_preamble_instruction(dvi_format, numerator, denominator, magnification,
                                             name='comment_len')
     comment_encoded = EncodedString(value=comment, name='comment')
 
-    encodeds = [op_code_encoded,
-                dvi_format_encoded, numerator_encoded, denominator_encoded,
-                magnification_encoded, comment_length_encoded, comment_encoded]
+    encodeds = EncodedInstruction(OpCode.preamble,
+                                  dvi_format_encoded, numerator_encoded,
+                                  denominator_encoded, magnification_encoded,
+                                  comment_length_encoded, comment_encoded)
     return encodeds
 
 
@@ -368,7 +396,6 @@ signature_integer = 223
 
 
 def get_post_postamble_instruction(postamble_pointer, dvi_format):
-    op_code_encoded = EncodedOperation(OpCode.post_postamble)
     # Pointer to OpCode.postamble.
     postamble_pointer_encoded = EncodedInteger(length=4,
                                                value=postamble_pointer,
@@ -380,8 +407,10 @@ def get_post_postamble_instruction(postamble_pointer, dvi_format):
     signature_encodeds = [EncodedInteger(length=1, value=signature_integer,
                                          name='signature')
                           for _ in range(4)]
-    encodeds = [op_code_encoded, postamble_pointer_encoded,
-                dvi_format_encoded] + signature_encodeds
+
+    encodeds = EncodedInstruction(OpCode.post_postamble,
+                                  postamble_pointer_encoded,
+                                  dvi_format_encoded, *signature_encodeds)
     return encodeds
 
 
@@ -467,7 +496,6 @@ get_define_font_nr_instruction_funcs = [
 
 def _get_func_on_bytes(n, funcs, signed):
     nr_bytes_needed = get_bytes_needed(n, signed=signed)
-    print(funcs)
     return funcs[nr_bytes_needed - 1]
 
 
@@ -476,7 +504,6 @@ def _scatter_instruction(signed, get_instruction_funcs):
         base_get_instruction_func = _get_func_on_bytes(main_val,
                                                        get_instruction_funcs,
                                                        signed=signed)
-        print(base_get_instruction_func)
         return base_get_instruction_func(main_val, *args, **kwargs)
     return get_instruction_func
 

@@ -13,13 +13,16 @@ class EncodedValue(object):
 
 class EncodedInteger(EncodedValue):
 
-    def __init__(self, length, signed=False, *args, **kwargs):
+    def __init__(self, length, signed=False, allow_unsigned_4_byte=False,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.length = length
         self.signed = signed
+        self.allow_unsigned_4_byte = allow_unsigned_4_byte
 
     def encode(self):
-        return _encode_integer_to_bytes(self.length, self.value, self.signed)
+        return _encode_integer_to_bytes(self.length, self.value, self.signed,
+                                        self.allow_unsigned_4_byte)
 
     @property
     def value_as_int(self):
@@ -56,12 +59,16 @@ class EncodedString(EncodedValue):
                                                          len(self.value))
 
 
-def _encode_integer_to_bytes(length, value, signed=False):
-    # 'DVI files use big endian format for multiple byte integer
-    # parameters.'
-    if length == 4:
+def _encode_integer_to_bytes(length, value, signed=False,
+                             allow_unsigned_4_byte=False):
+    if not allow_unsigned_4_byte and length == 4:
         signed = True
-    return value.to_bytes(length=length, signed=signed, byteorder='big')
+    try:
+        # 'DVI files use big endian format for multiple byte integer
+        # parameters.'
+        return value.to_bytes(length=length, signed=signed, byteorder='big')
+    except:
+        import pdb; pdb.set_trace()
 
 
 no_arg_char_op_codes = list(range(128))
@@ -175,7 +182,8 @@ def get_define_font_nr_instruction_func(op_code, font_nr_length_bytes):
                                          value=font_nr,
                                          name='font_nr')
         check_sum_encoded = EncodedInteger(length=4, value=check_sum,
-                                           name='check_sum')
+                                           name='check_sum',
+                                           allow_unsigned_4_byte=True)
         scale_factor_encoded = EncodedInteger(length=4, value=scale_factor,
                                               name='scale_factor')
         design_size_encoded = EncodedInteger(length=4, value=design_size,

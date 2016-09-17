@@ -29,6 +29,9 @@ from dvi_spec import (get_set_char_instruction,
                       get_post_postamble_instruction,
                       )
 
+from pydvi.Font.TfmParser import TfmParser
+from pydvi.TeXUnit import pt2sp
+
 
 def commands_to_bytes(commands):
     return (b'').join(ev.encode() for ev in commands)
@@ -49,16 +52,18 @@ bop = get_begin_page_instruction(*bop_args)
 commands += bop
 final_begin_page_pointer = len(commands_to_bytes(commands))
 
+font_parser = TfmParser('cmb10', 'cmb10.tfm')
+font_info = font_parser.tfm
 font_nr = 0
-check_sum = 1274110073
-scale_factor = design_size = 655360
-font_path = 'cmr10'
+scale_factor = design_size = int(pt2sp(font_info.design_font_size))
+font_path = font_info.font_name
 commands += get_define_font_nr_instruction(font_nr,
-                                           check_sum,
+                                           font_info.checksum,
                                            scale_factor, design_size,
                                            font_path)
 commands += get_select_font_nr_instruction(font_nr)
-commands += get_set_char_instruction(90)
+for char in range(font_info.smallest_character_code, font_info.largest_character_code):
+    commands += get_set_char_instruction(char)
 
 eop = get_end_page_instruction()
 commands += eop

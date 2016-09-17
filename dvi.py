@@ -16,50 +16,22 @@ def to_bytes(n, length, byteorder='big', signed=True):
     return s if byteorder == 'big' else s[::-1]
 
 
+def dvi_bytes_to_bytes(dvi_bytes, byte_endianness):
+    kwargs = {
+        'length': dvi_bytes.length,
+        'byteorder': byte_endianness,
+        'signed': dvi_bytes.signed
+    }
+    return to_bytes(int(dvi_bytes.content), **kwargs)
+
+# State: (h,v,w,x,y,z)
+
+
+
+
 class DVIDocument(object):
     dvi_version = 2
     byte_endianness = 'big'
-
-    set_character_op_codes = {
-        1: 128,
-        2: 129,
-        3: 130,
-        4: 131,
-    }
-    put_character_op_codes = {
-        1: 133,
-        2: 134,
-        3: 135,
-        4: 136,
-    }
-    begin_page_op_code = 139
-    end_page_op_code = 140
-    push_op_code = 141
-    pop_op_code = 142
-    right_op_codes = {
-        1: 143,
-        2: 144,
-        3: 145,
-        4: 146,
-    }
-    down_op_codes = {
-        1: 157,
-        2: 158,
-        3: 159,
-        4: 160,
-    }
-    base_set_font_op_code = 171
-    define_font_op_codes = {
-        1: 243,
-        2: 244,
-        3: 245,
-        4: 246,
-    }
-    preamble_op_code = 247
-    postamble_op_code = 248
-    post_postamble_op_code = 249
-
-    signature_integer = 223
 
     def __init__(self):
         self.last_begin_page_byte_index = -1
@@ -70,14 +42,6 @@ class DVIDocument(object):
         self.current_stack_depth = 0
         self.current_page_height_plus_depth = 0
         self.maximum_page_height_plus_depth = 0
-
-    def _dvi_bytes_to_bytes(self, dvi_bytes):
-        kwargs = {
-            'length': dvi_bytes.length,
-             'byteorder': self.byte_endianness,
-             'signed': dvi_bytes.signed
-        }
-        return to_bytes(int(dvi_bytes.content), **kwargs)
 
     def write_preamble(self, unit_numerator=int(254e5),
                        unit_denominator=int(7227 * 2 ** 16),
@@ -120,7 +84,7 @@ class DVIDocument(object):
                                            signed=False))
 
     def begin_page(self, page_numbers=None):
-        self.bytes_set.append(DVIBytes(length=1, content=self.begin_page_op_code, signed=False))
+        self.bytes_set.append(DVIBytes(length=1, content=begin_page_op_code, signed=False))
         new_begin_page_byte_index = self.number_of_bytes - 1
         if page_numbers is None:
             page_numbers = [0 for _ in range(10)]
@@ -137,16 +101,16 @@ class DVIDocument(object):
 
     def end_page(self):
         self.current_page_height_plus_depth = 0
-        self._add_op_code(self.end_page_op_code)
+        self._add_op_code(end_page_op_code)
 
     def push(self):
         self.current_stack_depth += 1
         self.maximum_stack_depth = max(self.maximum_stack_depth, self.current_stack_depth)
-        self._add_op_code(self.push_op_code)
+        self._add_op_code(self.op_code)
 
     def pop(self):
         self.current_stack_depth -= 1
-        self._add_op_code(self.pop_op_code)
+        self._add_op_code(self.op_code)
 
     def down(self, number_of_units):
         if self.current_stack_depth == 0:
@@ -155,7 +119,7 @@ class DVIDocument(object):
                                                       self.current_page_height_plus_depth)
 
         number_of_bytes = required_bytes(number_of_units)
-        op_code = self.down_op_codes[number_of_bytes]
+        op_code = down_op_codes[number_of_bytes]
         self._add_op_code(op_code)
         self.bytes_set.append(DVIBytes(length=number_of_bytes,
                                        content=number_of_units,
@@ -163,7 +127,7 @@ class DVIDocument(object):
 
     def right(self, number_of_units):
         number_of_bytes = required_bytes(number_of_units)
-        op_code = self.right_op_codes[number_of_bytes]
+        op_code = right_op_codes[number_of_bytes]
         self._add_op_code(op_code)
         self.bytes_set.append(DVIBytes(length=number_of_bytes,
                                        content=number_of_units,
@@ -176,7 +140,7 @@ class DVIDocument(object):
             op_code = character_code
         else:
             number_of_bytes = required_bytes(character_code)
-            op_code = self.set_character_op_codes[number_of_bytes]
+            op_code = set_character_op_codes[number_of_bytes]
         self._add_op_code(op_code)
         if number_of_bytes > 0:
             self.bytes_set.append(DVIBytes(length=number_of_bytes, content=character_code, signed=False))
@@ -184,7 +148,7 @@ class DVIDocument(object):
     def put_character(self, character):
         character_code = ord(character)
         number_of_bytes = required_bytes(character_code)
-        op_code = self.put_character_op_codes[number_of_bytes]
+        op_code = put_character_op_codes[number_of_bytes]
         self._add_op_code(op_code)
         if number_of_bytes > 0:
             self.bytes_set.append(DVIBytes(length=number_of_bytes, content=character_code, signed=False))
@@ -196,7 +160,7 @@ class DVIDocument(object):
         directory_path = ''
         font_name = os.path.splitext(file_name)[0]
         number_of_bytes = required_bytes(font_number)
-        op_code = self.define_font_op_codes[number_of_bytes]
+        op_code = define_font_op_codes[number_of_bytes]
         font_definition_bytes_set = [
             DVIBytes(length=1, content=op_code, signed=False),
             DVIBytes(length=number_of_bytes, content=font_number, signed=False),
@@ -215,7 +179,7 @@ class DVIDocument(object):
         self.font_definitions_bytes_set.extend(font_definition_bytes_set)
 
     def set_font(self, font_number):
-        op_code = self.base_set_font_op_code + font_number
+        op_code = base_set_font_op_code + font_number
         self._add_op_code(op_code)
 
     @property
@@ -224,7 +188,7 @@ class DVIDocument(object):
         # raise NotImplementedError
 
     def write_postamble(self):
-        self.bytes_set.append(DVIBytes(length=1, content=self.postamble_op_code, signed=False))
+        self.bytes_set.append(DVIBytes(length=1, content=postamble_op_code, signed=False))
         postamble_byte_index = self.number_of_bytes - 1
         self.bytes_set.extend([
             DVIBytes(length=4, content=self.last_begin_page_byte_index, signed=False),
@@ -244,7 +208,7 @@ class DVIDocument(object):
 
     def _write_post_postamble(self, postamble_byte_index):
         self.bytes_set.extend([
-            DVIBytes(length=1, content=self.post_postamble_op_code, signed=False),
+            DVIBytes(length=1, content=post_postamble_op_code, signed=False),
             DVIBytes(length=4, content=postamble_byte_index, signed=False),
             DVIBytes(length=1, content=self.dvi_version, signed=False),
         ])
@@ -260,7 +224,8 @@ class DVIDocument(object):
         return total_length
 
     def _to_bytes(self):
-        return b''.join(self._dvi_bytes_to_bytes(b) for b in self.bytes_set)
+        return b''.join(dvi_bytes_to_bytes(b, self.byte_endianness)
+                        for b in self.bytes_set)
 
     def to_file(self, file_name):
         with open(file_name, 'wb') as file:

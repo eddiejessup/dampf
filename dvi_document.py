@@ -66,32 +66,38 @@ class DVIDocument(object):
     def flat_instruction_parts(self):
         return [p for inst in self.instructions for p in inst.op_and_args]
 
-    @property
-    def begin_page_pointers(self):
+    def op_code_pointers(self, op_code):
         byte_pointer = 0
-        begin_page_pointers = []
+        op_code_pointers = []
         for part in self.flat_instruction_parts:
             byte_pointer += part.nr_bytes()
             if (isinstance(part, EncodedOperation)
-                    and part.op_code == OpCode.begin_page):
-                begin_page_pointers.append(byte_pointer)
-        return begin_page_pointers
+                    and part.op_code == op_code):
+                op_code_pointers.append(byte_pointer)
+        return op_code_pointers
+
+    @property
+    def _begin_page_pointers(self):
+        return self.op_code_pointers(OpCode.begin_page)
 
     @property
     def last_begin_page_pointer(self):
-        pointers = self.begin_page_pointers
+        pointers = self._begin_page_pointers
         return pointers[-1] if pointers else -1
 
     @property
     def nr_begin_page_pointers(self):
-        return len(self.begin_page_pointers)
+        return len(self._begin_page_pointers)
 
     def begin_page(self):
+        # If any pages have been begun, need to end the previous page.
+        if self._begin_page_pointers:
+            self._end_page()
         bop_args = list(range(10)) + [self.last_begin_page_pointer]
         bop = get_begin_page_instruction(*bop_args)
         self.mundane_instructions.append(bop)
 
-    def end_page(self):
+    def _end_page(self):
         eop = get_end_page_instruction()
         self.mundane_instructions.append(eop)
 
@@ -121,7 +127,7 @@ class DVIDocument(object):
     def current_font_info(self):
         return self.defined_fonts_info[self.current_font_nr]
 
-    def end_document(self):
+    def _end_document(self):
         self._do_postamble()
         # Define all defined fonts again, as required.
         for font_nr, font_info in self.defined_fonts_info.items():
@@ -134,7 +140,6 @@ class DVIDocument(object):
         max_page_height_plus_depth = 1
         max_page_width = 1
 
-        self.postamble_pointer = len(self.encode()) + 1
         post = get_postamble_instruction(self.last_begin_page_pointer,
                                          numerator,
                                          denominator,
@@ -147,7 +152,11 @@ class DVIDocument(object):
         self.mundane_instructions.append(post)
 
     def _do_post_postamble(self):
-        post_post = get_post_postamble_instruction(self.postamble_pointer,
+        postamble_pointers = self.op_code_pointers(OpCode.postamble)
+        assert len(postamble_pointers) == 1
+        postamble_pointer = postamble_pointers[-1]
+
+        post_post = get_post_postamble_instruction(postamble_pointer,
                                                    dvi_format)
         self.mundane_instructions.append(post_post)
 
@@ -164,14 +173,16 @@ class DVIDocument(object):
     def down(self, a):
         self.mundane_instructions.append(get_down_instruction(a))
 
-    def encode(self):
+    def _encode(self):
         return b''.join(inst.encode() for inst in self.instructions)
 
     def set_char(self, char):
         self.mundane_instructions.append(get_set_char_instruction(char))
 
     def write(self, file_name):
-        open(file_name, 'wb').write(self.encode())
+        d._end_page()
+        self._end_document()
+        open(file_name, 'wb').write(self._encode())
 
     def put_rule(self, height, width):
         inst = get_put_rule_instruction(height, width)
@@ -207,6 +218,4 @@ d.pop()
 d.down(1000000)
 d.put_rule(1000000, 10000000)
 
-d.end_page()
-d.end_document()
 d.write('test.dvi')

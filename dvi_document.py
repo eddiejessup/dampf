@@ -57,6 +57,7 @@ class DVIDocument(object):
         self.defined_fonts_info = {}
         self.stack_depth = 0
         self.max_stack_depth = self.stack_depth
+        self.begin_new_page()
 
     @property
     def instructions(self):
@@ -89,8 +90,8 @@ class DVIDocument(object):
     def nr_begin_page_pointers(self):
         return len(self._begin_page_pointers)
 
-    def begin_page(self):
-        # If any pages have been begun, need to end the previous page.
+    def begin_new_page(self):
+        # If we have any previous pages, need to end the last one.
         if self._begin_page_pointers:
             self._end_page()
         bop_args = list(range(10)) + [self.last_begin_page_pointer]
@@ -194,8 +195,6 @@ class DVIDocument(object):
 
 d = DVIDocument(magnification=1000)
 
-d.begin_page()
-
 d.define_font(font_nr=0, font_name='cmr10', font_path='cmr10.tfm')
 d.select_font(font_nr=0)
 font_info = d.current_font_info
@@ -214,6 +213,8 @@ for char in range(font_info.smallest_character_code,
                   font_info.largest_character_code):
     d.set_char(char)
 d.pop()
+
+d.begin_new_page()
 
 d.down(1000000)
 d.put_rule(1000000, 10000000)

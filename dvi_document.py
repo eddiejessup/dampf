@@ -2,45 +2,51 @@ from pydvi.Font.TfmParser import TfmParser
 from pydvi.TeXUnit import pt2sp
 
 
-from dvi_spec import (get_set_char_instruction,
-                      get_set_rule_instruction,
-                      get_put_char_instruction,
-                      get_put_rule_instruction,
+from .dvi_spec import (get_set_char_instruction,
+                       get_set_rule_instruction,
+                       get_put_char_instruction,
+                       get_put_rule_instruction,
 
-                      get_no_op_instruction,
+                       get_no_op_instruction,
 
-                      get_begin_page_instruction,
-                      get_end_page_instruction,
+                       get_begin_page_instruction,
+                       get_end_page_instruction,
 
-                      get_push_instruction,
-                      get_pop_instruction,
+                       get_push_instruction,
+                       get_pop_instruction,
 
-                      get_right_instruction,
-                      get_right_w_instruction,
-                      get_set_w_then_right_w_instruction,
-                      get_right_x_instruction,
-                      get_set_x_then_right_x_instruction,
+                       get_right_instruction,
+                       get_right_w_instruction,
+                       get_set_w_then_right_w_instruction,
+                       get_right_x_instruction,
+                       get_set_x_then_right_x_instruction,
 
-                      get_down_instruction,
-                      get_down_y_instruction,
-                      get_set_y_then_down_y_instruction,
-                      get_down_z_instruction,
-                      get_set_z_then_down_z_instruction,
+                       get_down_instruction,
+                       get_down_y_instruction,
+                       get_set_y_then_down_y_instruction,
+                       get_down_z_instruction,
+                       get_set_z_then_down_z_instruction,
 
-                      get_define_font_nr_instruction,
-                      get_select_font_nr_instruction,
+                       get_define_font_nr_instruction,
+                       get_select_font_nr_instruction,
 
-                      get_do_special_instruction,
+                       get_do_special_instruction,
 
-                      get_preamble_instruction,
-                      get_postamble_instruction,
-                      get_post_postamble_instruction,
-                      )
-from dvi_spec import EncodedOperation, OpCode
+                       get_preamble_instruction,
+                       get_postamble_instruction,
+                       get_post_postamble_instruction,
+                       )
+from .dvi_spec import EncodedOperation, OpCode
 
 numerator = int(254e5)
 denominator = int(7227 * 2 ** 16)
 dvi_format = 2
+
+
+def get_font_info(font_name, font_path):
+    font_parser = TfmParser(font_name, font_path)
+    font_info = font_parser.tfm
+    return font_info
 
 
 class DVIDocument(object):
@@ -102,20 +108,24 @@ class DVIDocument(object):
         eop = get_end_page_instruction()
         self.mundane_instructions.append(eop)
 
-    def define_font(self, font_nr, font_name, font_path):
-        font_parser = TfmParser(font_name, font_path)
-        font_info = font_parser.tfm
-        self._define_font(font_nr, font_info)
-        self.defined_fonts_info[font_nr] = font_info
-
-    def _define_font(self, font_nr, font_info):
-        scale_factor = design_size = int(pt2sp(font_info.design_font_size))
+    def define_font(self, font_nr, font_name, font_path,
+                    scale_factor_ratio=1.0):
+        font_info = get_font_info(font_name, font_path)
+        design_size = int(pt2sp(font_info.design_font_size))
+        scale_factor = int(design_size * scale_factor_ratio)
         font_path = font_info.font_name
         define_font_nr_instr = get_define_font_nr_instruction(font_nr,
                                                               font_info.checksum,
                                                               scale_factor,
                                                               design_size,
                                                               font_path)
+        self._define_font(define_font_nr_instr)
+        self.defined_fonts_info[font_nr] = {
+            'font_info': font_info,
+            'define_instruction': define_font_nr_instr
+        }
+
+    def _define_font(self, define_font_nr_instr):
         self.mundane_instructions.append(define_font_nr_instr)
 
     def select_font(self, font_nr):
@@ -126,13 +136,13 @@ class DVIDocument(object):
 
     @property
     def current_font_info(self):
-        return self.defined_fonts_info[self.current_font_nr]
+        return self.defined_fonts_info[self.current_font_nr]['font_info']
 
     def _end_document(self):
         self._do_postamble()
         # Define all defined fonts again, as required.
-        for font_nr, font_info in self.defined_fonts_info.items():
-            self._define_font(font_nr, font_info)
+        for font_nr, font_details in self.defined_fonts_info.items():
+            self._define_font(font_details['define_instruction'])
         self._do_post_postamble()
 
     def _do_postamble(self):
@@ -174,6 +184,9 @@ class DVIDocument(object):
     def down(self, a):
         self.mundane_instructions.append(get_down_instruction(a))
 
+    def right(self, a):
+        self.mundane_instructions.append(get_right_instruction(a))
+
     def _encode(self):
         return b''.join(inst.encode() for inst in self.instructions)
 
@@ -181,7 +194,7 @@ class DVIDocument(object):
         self.mundane_instructions.append(get_set_char_instruction(char))
 
     def write(self, file_name):
-        d._end_page()
+        self._end_page()
         self._end_document()
         open(file_name, 'wb').write(self._encode())
 
@@ -193,30 +206,30 @@ class DVIDocument(object):
         inst = get_set_rule_instruction(height, width)
         self.mundane_instructions.append(inst)
 
-d = DVIDocument(magnification=1000)
+# d = DVIDocument(magnification=1000)
 
-d.define_font(font_nr=0, font_name='cmr10', font_path='cmr10.tfm')
-d.select_font(font_nr=0)
-font_info = d.current_font_info
-d.push()
-for char in range(font_info.smallest_character_code,
-                  font_info.largest_character_code):
-    d.set_char(char)
-d.pop()
+# d.define_font(font_nr=0, font_name='cmr10', font_path='cmr10.tfm')
+# d.select_font(font_nr=0)
+# font_info = d.current_font_info
+# d.push()
+# for char in range(font_info.smallest_character_code,
+#                   font_info.largest_character_code):
+#     d.set_char(char)
+# d.pop()
 
-d.down(1000000)
+# d.down(1000000)
 
-d.define_font(font_nr=1, font_name='cmb10', font_path='cmb10.tfm')
-d.select_font(font_nr=1)
-d.push()
-for char in range(font_info.smallest_character_code,
-                  font_info.largest_character_code):
-    d.set_char(char)
-d.pop()
+# d.define_font(font_nr=1, font_name='cmb10', font_path='cmb10.tfm')
+# d.select_font(font_nr=1)
+# d.push()
+# for char in range(font_info.smallest_character_code,
+#                   font_info.largest_character_code):
+#     d.set_char(char)
+# d.pop()
 
-d.begin_new_page()
+# d.begin_new_page()
 
-d.down(1000000)
-d.put_rule(1000000, 10000000)
+# d.down(1000000)
+# d.put_rule(1000000, 10000000)
 
-d.write('test.dvi')
+# d.write('test.dvi')

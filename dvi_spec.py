@@ -1,7 +1,7 @@
 from enum import Enum
 import os.path
 
-from utils import get_bytes_needed
+from .utils import get_bytes_needed
 
 
 class EncodedValue(object):

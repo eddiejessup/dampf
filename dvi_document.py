@@ -205,31 +205,3 @@ class DVIDocument(object):
     def set_rule(self, height, width):
         inst = get_set_rule_instruction(height, width)
         self.mundane_instructions.append(inst)
-
-# d = DVIDocument(magnification=1000)
-
-# d.define_font(font_nr=0, font_name='cmr10', font_path='cmr10.tfm')
-# d.select_font(font_nr=0)
-# font_info = d.current_font_info
-# d.push()
-# for char in range(font_info.smallest_character_code,
-#                   font_info.largest_character_code):
-#     d.set_char(char)
-# d.pop()
-
-# d.down(1000000)
-
-# d.define_font(font_nr=1, font_name='cmb10', font_path='cmb10.tfm')
-# d.select_font(font_nr=1)
-# d.push()
-# for char in range(font_info.smallest_character_code,
-#                   font_info.largest_character_code):
-#     d.set_char(char)
-# d.pop()
-
-# d.begin_new_page()
-
-# d.down(1000000)
-# d.put_rule(1000000, 10000000)
-
-# d.write('test.dvi')

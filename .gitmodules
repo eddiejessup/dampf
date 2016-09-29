@@ -1,0 +1,3 @@
+[submodule "pydvi"]
+	path = pydvi
+	url = git@github.com:eddiejessup/pydvi.git
